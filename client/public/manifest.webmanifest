@@ -1,0 +1,11 @@
+{
+  "name": "Grand et Disciples",
+  "short_name": "G&D",
+  "description": "Réviser, s'exercer et s'entraider pour le bac.",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f1e7",
+  "theme_color": "#23211e",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
