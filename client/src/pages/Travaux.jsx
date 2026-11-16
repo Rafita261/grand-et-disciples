@@ -45,7 +45,8 @@ export default function Travaux() {
                   </Link>
                   <span className="fin">
                     {w.publie && <span className="chip chip-accent">Publié</span>}
-                    {w.feedback?.verdict && <span className={`chip ${VERDICT[w.feedback.verdict]?.[1]}`}>{VERDICT[w.feedback.verdict]?.[0]}</span>}
+                    {w.feedback?.note != null && <span className="chip">{String(w.feedback.note).replace('.', ',')} / 20</span>}
+                    {w.feedback?.verdict && w.feedback?.note == null && <span className={`chip ${VERDICT[w.feedback.verdict]?.[1]}`}>{VERDICT[w.feedback.verdict]?.[0]}</span>}
                     <button className="icon-btn" onClick={() => supprimer(w)} aria-label={`Supprimer ${w.titre}`}><Icon name="trash" size={18} /></button>
                   </span>
                 </li>

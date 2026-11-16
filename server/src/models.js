@@ -38,6 +38,7 @@ const exerciseSchema = new Schema(
     enonce: { type: String, required: true },
     indice: String,
     correction: String,
+    statut: { type: String, enum: ['publie', 'propose'], default: 'publie', index: true },
     auteur: ref('User'),
   },
   { timestamps: true }
@@ -82,7 +83,9 @@ const workSchema = new Schema(
     publie: { type: Boolean, default: false },
     feedback: {
       verdict: String,
+      note: Number, // sur 20, visible par l'auteur uniquement
       resume: String,
+      reecriture: String,
       etapes: [{ titre: String, statut: String, commentaire: String, extrait: String, correction: String }],
       genereLe: Date,
     },

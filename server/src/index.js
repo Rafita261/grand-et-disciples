@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
-import { aiEnabled } from './gemini.js';
+import { aiEnabled, cles } from './gemini.js';
 
 const { PORT = 4000, MONGODB_URI = 'mongodb://127.0.0.1:27017/grand-et-disciples', NODE_ENV, JWT_SECRET } = process.env;
 
@@ -18,6 +18,6 @@ try {
 }
 
 createApp().listen(PORT, () => {
-  console.log(`Grand et Disciples — API sur http://localhost:${PORT}`);
-  console.log(aiEnabled() ? 'Correction IA : activée (Gemini).' : 'Correction IA : désactivée (GEMINI_API_KEY vide).');
+  console.log(`Entraide — API sur http://localhost:${PORT}`);
+  console.log(aiEnabled() ? `Correction IA : activée (${cles().length} clé(s) Gemini).` : 'Correction IA : désactivée (GEMINI_API_KEYS vide).');
 });

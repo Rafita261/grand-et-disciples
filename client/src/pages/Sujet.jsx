@@ -1,4 +1,5 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../auth.jsx';
 import { duree } from '../api.js';
 import { useApi, Charge, Retour } from '../components/ui.jsx';
 import RichText from '../components/RichText.jsx';
@@ -11,6 +12,7 @@ export default function Sujet() {
   const corrige = sp.get('corrige') === '1';
   const q = useApi(`/annales/${id}${corrige ? '?corrige=1' : ''}`);
   const demarrer = useDemarrer();
+  const { estEnseignant } = useAuth();
   return (
     <>
       <div className="no-print"><Retour to="/annales">Annales du bac</Retour></div>
@@ -24,6 +26,7 @@ export default function Sujet() {
                 <button className="btn btn-primary" onClick={() => demarrer(a._id)}>Commencer un examen <Icon name="chevron" size={16} /></button>
                 <button className="btn btn-plain" onClick={() => window.print()}><Icon name="download" size={16} /> PDF</button>
                 <button className="btn btn-plain" onClick={() => setSp(corrige ? {} : { corrige: '1' })}><Icon name="check" size={16} /> {corrige ? 'Masquer le corrigé' : 'Afficher le corrigé'}</button>
+                {estEnseignant && <Link className="btn btn-plain" to={`/annales/${id}/modifier`}><Icon name="pen" size={16} /> Modifier</Link>}
               </div>
             </header>
             {a.exercices.map((e, i) => (

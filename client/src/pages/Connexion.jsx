@@ -30,8 +30,8 @@ export default function Connexion() {
     <div className="auth">
       <form className="card stack" onSubmit={submit}>
         <div className="marque">
-          <span className="logo">GD</span>
-          <span>Grand et Disciples</span>
+          <span className="logo">E</span>
+          <span>Entraide</span>
         </div>
         <p className="serif-it" style={{ textAlign: 'center' }}>Un pas de plus vers la réussite.</p>
         <div className="seg" style={{ justifySelf: 'center' }}>

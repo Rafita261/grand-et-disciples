@@ -18,7 +18,9 @@ export function useDemarrer() {
 }
 
 export default function Annales() {
-  const { user } = useAuth();
+  const { user, estEnseignant } = useAuth();
+  const chapitres = useApi('/chapters');
+  const matieres = [...new Set((chapitres.data || []).map((c) => c.matiere))];
   const demarrer = useDemarrer();
   const [f, setF] = useState({ matiere: '', serie: user.serie || '', annee: '' });
   const q = useApi(`/annales?${new URLSearchParams(Object.entries(f).filter(([, v]) => v))}`);
@@ -26,15 +28,18 @@ export default function Annales() {
 
   return (
     <>
-      <header>
-        <h1>Annales du bac</h1>
-        <p className="serif-it">S’entraîner en conditions réelles.</p>
+      <header className="row between">
+        <div>
+          <h1>Annales du bac</h1>
+          <p className="serif-it">S’entraîner en conditions réelles.</p>
+        </div>
+        {estEnseignant && <Link className="btn" to="/annales/nouveau"><Icon name="plus" size={18} /> Ajouter un sujet</Link>}
       </header>
       <div className="card filtres">
         <label className="champ">Matière
           <select value={f.matiere} onChange={set('matiere')}>
             <option value="">Toutes</option>
-            {['Mathématiques', 'Physique-Chimie', 'Philosophie'].map((m) => <option key={m}>{m}</option>)}
+            {matieres.map((m) => <option key={m}>{m}</option>)}
           </select>
         </label>
         <label className="champ">Série

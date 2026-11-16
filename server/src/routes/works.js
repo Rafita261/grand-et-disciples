@@ -16,7 +16,7 @@ r.get(
   '/works',
   ah(async (req, res) => {
     res.json(
-      await Work.find({ auteur: req.user._id }, 'titre format publie exercise updatedAt feedback.verdict')
+      await Work.find({ auteur: req.user._id }, 'titre format publie exercise updatedAt feedback.verdict feedback.note')
         .sort({ updatedAt: -1 })
         .limit(100)
         .lean()
@@ -68,7 +68,8 @@ r.post(
   ah(async (req, res) => {
     const w = await mine(req);
     if (w.contenu.trim().length < 10) throw httpError(400, "Rédige d'abord ta solution.");
-    w.feedback = await analyserSolution({ enonce: w.enonce, contenu: w.contenu, format: w.format });
+    const ref = w.exercise ? await Exercise.findById(w.exercise, 'enonce correction').lean() : null;
+    w.feedback = await analyserSolution({ enonce: w.enonce || ref?.enonce, contenu: w.contenu, format: w.format, corrige: ref?.correction });
     await w.save();
     res.json(w.feedback);
   })
@@ -87,6 +88,29 @@ r.post(
     w.publie = true;
     await w.save();
     res.json({ work: w._id });
+  })
+);
+
+// Correction directe depuis la page d'un exercice. Le brouillon et sa note sont rangés dans
+// « Mes travaux » : ils restent privés tant que l'élève ne publie pas.
+r.post(
+  '/exercises/:id/corriger',
+  aiLimiter,
+  ah(async (req, res) => {
+    const contenu = typeof req.body.contenu === 'string' ? req.body.contenu.slice(0, 20000) : '';
+    if (contenu.trim().length < 10) throw httpError(400, "Rédige d'abord ta solution.");
+    const e = await Exercise.findById(req.params.id, 'titre enonce correction statut auteur').lean();
+    const cache = e && e.statut === 'propose' && req.user.role === 'eleve' && String(e.auteur) !== String(req.user._id);
+    if (!e || cache) throw httpError(404, 'Exercice introuvable.');
+    const feedback = await analyserSolution({ enonce: e.enonce, contenu, format: 'texte', corrige: e.correction });
+    const w =
+      (await Work.findOne({ auteur: req.user._id, exercise: e._id }).sort({ updatedAt: -1 })) ||
+      new Work({ auteur: req.user._id, exercise: e._id, titre: e.titre, enonce: e.enonce });
+    w.contenu = contenu;
+    w.feedback = feedback;
+    await w.save();
+    await touchPractice(req.user._id);
+    res.json({ feedback: w.feedback, work: w._id });
   })
 );
 

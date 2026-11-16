@@ -22,12 +22,8 @@ const BAS = [
 
 const Marque = () => (
   <Link to="/" className="marque">
-    <span className="logo">GD</span>
-    <span>
-      Grand et
-      <br />
-      Disciples
-    </span>
+    <span className="logo">E</span>
+    <span>Entraide</span>
   </Link>
 );
 
@@ -72,7 +68,7 @@ export default function Layout({ children }) {
             <Icon name="menu" />
           </button>
           <Link to="/" className="marque marque-mini">
-            <span className="logo">GD</span> Grand et Disciples
+            <span className="logo">E</span> Entraide
           </Link>
           <span style={{ width: 40 }} />
         </header>

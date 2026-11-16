@@ -4,6 +4,9 @@ import { api } from '../api.js';
 import { useApi, Retour } from '../components/ui.jsx';
 import RichText from '../components/RichText.jsx';
 import Icon from '../components/Icon.jsx';
+import RetourIA from '../components/RetourIA.jsx';
+import ImportIA from '../components/ImportIA.jsx';
+import { transcrireFichier } from '../components/ImportIA.jsx';
 
 // Clavier de symboles pour écrire des maths sans connaître LaTeX.
 const SYMBOLES = ['²', '³', '√', '×', '÷', '±', '≤', '≥', '≠', '≈', '∞', 'π', '∑', '∫', '→', '⇒', '⇔', '∈', 'ℝ', 'ℕ', 'α', 'β', 'Δ', 'θ', '₀', '₁', '₂', 'ₙ', 'ₙ₊₁'];
@@ -13,25 +16,6 @@ const LATEX = [
   ['∞', '\\infty'], ['ℝ', '\\mathbb{R}'], ['$ $', '$ $'], ['formule', '\n\\[\n\n\\]\n'], ['titre', '\\section{Titre}\n'],
 ];
 const ETAT = { ok: ['Enregistré', 'chip-green'], attente: ['Modifié…', ''], envoi: ['Enregistrement…', ''], erreur: ['Non enregistré', 'chip-warn'] };
-const VERDICT = { correct: 'Solution correcte', partiel: 'Solution à revoir', incorrect: 'Solution à reprendre' };
-
-// Réduit la photo sur le téléphone avant l'envoi : quelques centaines de Ko au lieu de plusieurs Mo.
-async function compresser(file) {
-  const img = await createImageBitmap(file);
-  const k = Math.min(1, 1600 / Math.max(img.width, img.height));
-  const c = document.createElement('canvas');
-  c.width = Math.round(img.width * k);
-  c.height = Math.round(img.height * k);
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.75).split(',')[1];
-}
-const enBase64 = (file) =>
-  new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result).split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
 
 export default function Editeur() {
   const { id } = useParams();
@@ -115,10 +99,7 @@ export default function Editeur() {
 
   const importerPhoto = (file) =>
     lancer('photo', async () => {
-      const pdf = file.type === 'application/pdf';
-      if (pdf && file.size > 4_000_000) throw new Error('PDF trop lourd (4 Mo maximum).');
-      const data = pdf ? await enBase64(file) : await compresser(file);
-      const r = await api('/ai/transcrire', { method: 'POST', body: { mimeType: pdf ? 'application/pdf' : 'image/jpeg', data, format: w.format } });
+      const r = { texte: await transcrireFichier(file, w.format) };
       ajouter(r.texte);
       setMsg({ ok: 'Transcription ajoutée. Relis-la : une lecture automatique peut se tromper.' });
     });
@@ -177,6 +158,9 @@ export default function Editeur() {
 
       <details className="card no-print" open={!w.enonce && !w.contenu}>
         <summary><strong>Énoncé de l’exercice</strong> <span className="muted small">(aide la correction automatique)</span></summary>
+        <div style={{ marginTop: 10 }}>
+          <ImportIA actif={iaOn} label="Photo / PDF de l’énoncé" onTexte={(t) => maj({ enonce: w.enonce.trim() ? `${w.enonce.trimEnd()}\n\n${t}` : t })} />
+        </div>
         <textarea value={w.enonce} onChange={(e) => maj({ enonce: e.target.value })} placeholder="Recopie ou colle ici l’énoncé." style={{ marginTop: 10, minHeight: 80 }} aria-label="Énoncé" />
       </details>
 
@@ -228,21 +212,7 @@ export default function Editeur() {
             <div className="zone-tete" style={{ background: 'var(--warn-soft)' }}><span className="row"><Icon name="alert" size={18} /> Retour automatique · À vérifier</span></div>
             <div className="apercu stack">
               {fb ? (
-                <>
-                  <p><strong>{VERDICT[fb.verdict] || 'Analyse'}</strong></p>
-                  {fb.resume && <p className="small">{fb.resume}</p>}
-                  {fb.etapes.map((e, i) => (
-                    <div key={i} className={`etape-fb stack ${e.statut === 'correct' ? '' : e.statut}`} style={{ gap: 6 }}>
-                      <p className="row"><Icon name={e.statut === 'correct' ? 'check' : 'alert'} size={16} /> <strong>{e.titre}</strong></p>
-                      {e.commentaire && <RichText text={e.commentaire} className="small" />}
-                      {e.correction && <div className="card" style={{ padding: 10 }}><RichText text={e.correction} /></div>}
-                      {e.extrait && e.correction && w.contenu.includes(e.extrait) && (
-                        <button className="btn btn-primary btn-sm" style={{ justifySelf: 'start' }} onClick={() => appliquer(e)}>Appliquer la suggestion <Icon name="chevron" size={14} /></button>
-                      )}
-                    </div>
-                  ))}
-                  <p className="muted small">Estimation produite par une IA : elle peut se tromper. Publie ton travail pour obtenir l’avis d’un enseignant.</p>
-                </>
+                <RetourIA fb={fb} contenu={w.contenu} onAppliquer={appliquer} onReecrire={(t) => { maj({ contenu: t, format: 'latex' }); setVue('ecrire'); }} />
               ) : (
                 <p className="muted">Lance « Analyser ma solution » pour vérifier tes étapes une à une. Le retour reste indicatif : un enseignant peut le confirmer.</p>
               )}

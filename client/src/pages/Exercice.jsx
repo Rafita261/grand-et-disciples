@@ -5,6 +5,10 @@ import { useAuth } from '../auth.jsx';
 import { useApi, Charge, Avatar, BadgeRole, Retour, Vide } from '../components/ui.jsx';
 import RichText from '../components/RichText.jsx';
 import Icon from '../components/Icon.jsx';
+import RetourIA from '../components/RetourIA.jsx';
+import ImportIA from '../components/ImportIA.jsx';
+
+const ajouter = (a, t) => (a.trim() ? `${a.trimEnd()}\n\n${t}` : t);
 
 function Solutions({ id }) {
   const { estEnseignant } = useAuth();
@@ -55,7 +59,7 @@ function Solutions({ id }) {
   );
 }
 
-function Discussion({ id }) {
+function Discussion({ id, iaOn }) {
   const q = useApi(`/comments?exercise=${id}`);
   const [texte, setTexte] = useState('');
   const [err, setErr] = useState('');
@@ -89,7 +93,10 @@ function Discussion({ id }) {
       <form className="stack" onSubmit={envoyer}>
         <textarea value={texte} onChange={(e) => setTexte(e.target.value)} placeholder="Pose une question ou réponds… (formules entre $ $)" style={{ minHeight: 70 }} required aria-label="Ton message" />
         {err && <p className="note note-err">{err}</p>}
-        <button className="btn btn-sm" style={{ justifySelf: 'start' }}>Envoyer</button>
+        <div className="row">
+          <button className="btn btn-sm">Envoyer</button>
+          <ImportIA actif={iaOn} label="Photo / PDF" onTexte={(t) => setTexte((a) => ajouter(a, t))} />
+        </div>
       </form>
     </section>
   );
@@ -99,11 +106,27 @@ export default function Exercice() {
   const { id } = useParams();
   const nav = useNavigate();
   const q = useApi(`/exercises/${id}`);
+  const { estEnseignant } = useAuth();
   const [onglet, setOnglet] = useState('enonce');
   const [aide, setAide] = useState({});
   const [redige, setRedige] = useState(false);
   const [texte, setTexte] = useState('');
   const [msg, setMsg] = useState(null);
+  const ia = useApi('/ai/status');
+  const [fb, setFb] = useState(null);
+  const [corrige, setCorrige] = useState(false);
+
+  const corriger = async () => {
+    setCorrige(true);
+    setMsg(null);
+    try {
+      setFb((await api(`/exercises/${id}/corriger`, { method: 'POST', body: { contenu: texte } })).feedback);
+    } catch (e) {
+      setMsg({ err: e.message });
+    } finally {
+      setCorrige(false);
+    }
+  };
 
   const reveler = async (champ) => {
     if (aide[champ] !== undefined) return setAide({ ...aide, [champ]: undefined });
@@ -118,6 +141,7 @@ export default function Exercice() {
     try {
       await api(`/exercises/${id}/solutions`, { method: 'POST', body: { contenu: texte } });
       setTexte('');
+      setFb(null);
       setRedige(false);
       setMsg({ ok: 'Solution publiée. Merci pour ta contribution !' });
       setOnglet('solutions');
@@ -153,6 +177,13 @@ export default function Exercice() {
               </div>
             </header>
 
+            {e.statut === 'propose' && (
+              <p className="note note-warn row">
+                En attente de validation par un enseignant : cet exercice n’est pas encore visible par les autres élèves.
+                {estEnseignant && <button className="btn btn-sm btn-primary" onClick={() => api(`/exercises/${id}/publier`, { method: 'POST' }).then(q.reload).catch((x) => setMsg({ err: x.message }))}>Publier</button>}
+              </p>
+            )}
+
             <div className="tabs" role="tablist">
               {[['enonce', 'Énoncé'], ['solutions', `Solutions proposées (${e.nbSolutions})`], ['discussion', 'Discussion']].map(([k, l]) => (
                 <button key={k} role="tab" aria-selected={onglet === k} className={onglet === k ? 'actif' : ''} onClick={() => setOnglet(k)}>{l}</button>
@@ -171,13 +202,26 @@ export default function Exercice() {
                   {aide.correction !== undefined && <article className="card stack card-ok"><h2>Correction</h2><RichText text={aide.correction} /></article>}
                   {redige && (
                     <section className="card stack">
-                      <h2>Ma solution</h2>
+                      <div className="row between">
+                        <h2>Ma solution</h2>
+                        <ImportIA actif={Boolean(ia.data?.enabled)} label="Photo / PDF de ma copie" onTexte={(t) => setTexte((a) => ajouter(a, t))} />
+                      </div>
                       <textarea value={texte} onChange={(ev) => setTexte(ev.target.value)} placeholder="Rédige ta solution. Texte simple accepté ; formules entre $ $ si tu connais LaTeX." style={{ minHeight: 160 }} aria-label="Ma solution" />
                       {texte && <div className="note"><RichText text={texte} /></div>}
                       <div className="row">
-                        <button className="btn btn-primary" onClick={publier} disabled={texte.trim().length < 10}>Publier</button>
+                        <button className="btn" onClick={corriger} disabled={!ia.data?.enabled || corrige || texte.trim().length < 10}>
+                          <Icon name="spark" size={16} /> {corrige ? 'Correction en cours…' : 'Corriger avec l’IA'}
+                        </button>
+                        <button className="btn btn-primary" onClick={publier} disabled={texte.trim().length < 10}>Publier comme proposition de correction</button>
                         <button className="btn btn-plain" onClick={ouvrirEditeur}>Ouvrir l’éditeur complet</button>
                       </div>
+                      {ia.data && !ia.data.enabled && <p className="muted small">Correction par l’IA indisponible : clé Gemini non configurée sur le serveur.</p>}
+                      {fb && (
+                        <div className="zone">
+                          <div className="zone-tete" style={{ background: 'var(--warn-soft)' }}><span className="row"><Icon name="alert" size={18} /> Retour automatique · À vérifier</span></div>
+                          <div className="apercu"><RetourIA fb={fb} contenu={texte} onAppliquer={(x) => setTexte(texte.replace(x.extrait, () => x.correction))} onReecrire={setTexte} /></div>
+                        </div>
+                      )}
                       <p className="muted small">L’éditeur complet propose un clavier de symboles, l’import d’une photo et l’analyse automatique.</p>
                     </section>
                   )}
@@ -195,7 +239,7 @@ export default function Exercice() {
               </div>
             )}
             {onglet === 'solutions' && <Solutions id={id} />}
-            {onglet === 'discussion' && <Discussion id={id} />}
+            {onglet === 'discussion' && <Discussion id={id} iaOn={Boolean(ia.data?.enabled)} />}
           </>
         )}
       </Charge>

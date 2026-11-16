@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useApi } from '../components/ui.jsx';
 import RichText from '../components/RichText.jsx';
 import Icon from '../components/Icon.jsx';
+import ImportIA from '../components/ImportIA.jsx';
 
 const SYMBOLES = ['²', '³', '√', '×', '÷', '≤', '≥', '≠', '∞', 'π', '∫', '→', '⇒', '∈', 'ℝ', 'ₙ'];
 const hms = (s) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, '0')).join(':');
@@ -12,6 +13,7 @@ export default function Simulation() {
   const { id } = useParams();
   const nav = useNavigate();
   const q = useApi(`/attempts/${id}`);
+  const ia = useApi('/ai/status');
   const [i, setI] = useState(0);
   const [reponses, setReponses] = useState(null);
   const [reste, setReste] = useState(null);
@@ -122,7 +124,10 @@ export default function Simulation() {
         <RichText text={e.enonce} />
         <div className="row between">
           <strong>Votre réponse</strong>
-          <button className="lien small" onClick={() => setApercu(!apercu)}>{apercu ? 'Modifier' : 'Aperçu'}</button>
+          <span className="row">
+            <ImportIA actif={Boolean(ia.data?.enabled)} label="Photo / PDF de ma copie" onTexte={(t) => { const c = courant.current; setReponses(c.reponses.map((r, k) => (k === c.i ? (r.trim() ? `${r.trimEnd()}\n\n${t}` : t) : r))); }} />
+            <button className="lien small" onClick={() => setApercu(!apercu)}>{apercu ? 'Modifier' : 'Aperçu'}</button>
+          </span>
         </div>
         {apercu ? (
           <div className="note"><RichText text={reponses[i] || 'Aucune réponse.'} /></div>

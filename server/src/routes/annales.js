@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Annale, Attempt } from '../models.js';
-import { ah, httpError, str, requireAuth, touchPractice } from '../util.js';
+import { ah, httpError, str, requireAuth, requireTeacher, touchPractice } from '../util.js';
 import { aiEnabled, noterExamen } from '../gemini.js';
 
 const r = Router();
@@ -33,6 +33,68 @@ r.get(
     const a = await Annale.findById(req.params.id).lean();
     if (!a) throw httpError(404, 'Sujet introuvable.');
     res.json(req.query.corrige === '1' ? a : sansCorrige(a));
+  })
+);
+
+/* ---------- Gestion des sujets (enseignants) ---------- */
+
+function champsSujet(b) {
+  const texte = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+  const doc = {
+    matiere: str(b.matiere, 60),
+    serie: str(b.serie, 10),
+    titre: str(b.titre, 140),
+    type: str(b.type, 60) || "Sujet d'entraînement",
+    annee: parseInt(b.annee, 10) || undefined,
+    dureeMin: Math.min(600, Math.max(5, parseInt(b.dureeMin, 10) || 180)),
+    exercices: (Array.isArray(b.exercices) ? b.exercices : []).slice(0, 20).map((e) => ({
+      titre: str(e?.titre, 140),
+      theme: str(e?.theme, 60) || str(e?.titre, 60),
+      points: Math.min(100, Math.max(0.5, Number(e?.points) || 5)),
+      enonce: texte(e?.enonce, 20000),
+      corrige: texte(e?.corrige, 20000),
+    })),
+  };
+  if (!doc.matiere || !doc.serie || !doc.titre) throw httpError(400, 'Matière, série et titre sont obligatoires.');
+  if (!doc.exercices.length) throw httpError(400, 'Ajoute au moins un exercice.');
+  if (doc.exercices.some((e) => !e.titre || !e.enonce.trim())) throw httpError(400, 'Chaque exercice doit avoir un titre et un énoncé.');
+  return doc;
+}
+
+r.post(
+  '/annales',
+  requireTeacher,
+  ah(async (req, res) => {
+    const a = await Annale.create(champsSujet(req.body));
+    res.status(201).json({ _id: a._id });
+  })
+);
+
+r.put(
+  '/annales/:id',
+  requireTeacher,
+  ah(async (req, res) => {
+    const a = await Annale.findById(req.params.id);
+    if (!a) throw httpError(404, 'Sujet introuvable.');
+    const doc = champsSujet(req.body);
+    // Changer le nombre d'exercices fausserait les copies déjà rendues ou en cours.
+    if (doc.exercices.length !== a.exercices.length && (await Attempt.exists({ annale: a._id })))
+      throw httpError(409, 'Des élèves ont déjà composé sur ce sujet : le nombre d’exercices ne peut plus changer.');
+    a.set(doc);
+    if (!doc.annee) a.annee = undefined;
+    await a.save();
+    res.json({ _id: a._id });
+  })
+);
+
+r.delete(
+  '/annales/:id',
+  requireTeacher,
+  ah(async (req, res) => {
+    if (await Attempt.exists({ annale: req.params.id }))
+      throw httpError(409, 'Des élèves ont déjà composé sur ce sujet : il ne peut plus être supprimé.');
+    await Annale.deleteOne({ _id: req.params.id });
+    res.status(204).end();
   })
 );
 

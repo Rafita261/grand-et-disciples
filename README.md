@@ -1,4 +1,4 @@
-# Grand et Disciples
+# Entraide
 
 Application web de révision et d'entraide pour le bac : cours, exercices, solutions de la communauté,
 éditeur de copies (texte simple ou LaTeX), correction automatique par Gemini, annales et simulations d'examen.
@@ -33,23 +33,28 @@ Comptes de démonstration (mot de passe `demo1234`) : `eleve@demo.mg`, `prof@dem
 | `MONGODB_URI` | Adresse de la base |
 | `JWT_SECRET` | Secret des sessions — à changer absolument en production |
 | `TEACHER_CODE` | Code demandé à l'inscription pour être enseignant |
-| `GEMINI_API_KEY` | Clé Gemini. **Vide = fonctions IA désactivées**, le reste fonctionne |
+| `GEMINI_API_KEYS` | Une ou plusieurs clés Gemini séparées par des virgules. Si une clé atteint son quota ou est refusée, le serveur passe à la suivante. **Vide = fonctions IA désactivées** |
 | `GEMINI_MODEL` | Modèle utilisé (`gemini-3.6-flash` par défaut) |
 | `AI_HOURLY_LIMIT` | Appels IA par élève et par heure |
 
 ## Production
 
 ```bash
-cd client && npm install && npm run build
+cd client && npm install --include=dev && npm run build
 cd ../server && npm install && NODE_ENV=production npm start
 ```
 
 Le serveur Express distribue alors `client/dist` : un seul service à héberger.
 
+## Rôles
+
+- **Enseignant** (inscription avec `TEACHER_CODE`) : crée et modifie les chapitres et les sujets d'examen, publie des exercices, valide les solutions et les exercices proposés.
+- **Élève** : peut proposer un exercice ; il reste dans « Propositions en attente » jusqu'à sa publication par un enseignant.
+
 ## Ce que fait l'IA (Gemini)
 
-- **Analyser ma solution** : vérification étape par étape, avec suggestion applicable en un clic.
-- **Photo / PDF** : transcription d'une copie en texte simple ou en LaTeX (photo compressée sur le téléphone avant envoi).
+- **Analyser ma solution / Corriger avec l'IA** (éditeur et page d'un exercice) : vérification étape par étape, note privée sur 20, et démarche de l'élève réécrite en LaTeX, publiable ensuite comme proposition de correction.
+- **Photo / PDF** : disponible dans l'éditeur, le formulaire d'exercice (énoncé, correction) et le formulaire de chapitre ; transcription d'une copie en texte simple ou en LaTeX (photo compressée sur le téléphone avant envoi).
 - **Convertir en LaTeX** : pour ceux qui écrivent en texte simple.
 - **Simulation** : note estimée par exercice. Sans clé, l'élève s'auto-évalue à partir du corrigé.
 

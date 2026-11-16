@@ -3,11 +3,13 @@ import { useParams } from 'react-router-dom';
 import { api, ilYA } from '../api.js';
 import { useApi, Charge, Avatar, BadgeRole, Retour } from '../components/ui.jsx';
 import RichText from '../components/RichText.jsx';
+import ImportIA from '../components/ImportIA.jsx';
 
 export default function TravailPublic() {
   const { id } = useParams();
   const q = useApi(`/community/works/${id}`);
   const avis = useApi(`/comments?work=${id}`);
+  const ia = useApi('/ai/status');
   const [texte, setTexte] = useState('');
   const [err, setErr] = useState('');
   const envoyer = async (e) => {
@@ -58,7 +60,10 @@ export default function TravailPublic() {
         <form className="stack" onSubmit={envoyer}>
           <textarea value={texte} onChange={(e) => setTexte(e.target.value)} placeholder="Donne ton avis, signale une erreur…" style={{ minHeight: 70 }} required aria-label="Ton avis" />
           {err && <p className="note note-err">{err}</p>}
-          <button className="btn btn-sm" style={{ justifySelf: 'start' }}>Envoyer</button>
+          <div className="row">
+            <button className="btn btn-sm">Envoyer</button>
+            <ImportIA actif={Boolean(ia.data?.enabled)} label="Photo / PDF" onTexte={(t) => setTexte((a) => (a.trim() ? `${a.trimEnd()}\n\n${t}` : t))} />
+          </div>
         </form>
       </section>
     </>

@@ -8,6 +8,7 @@ import Accueil from './pages/Accueil.jsx';
 // Chaque page est un fichier séparé, téléchargé seulement quand on l'ouvre.
 const Revisions = lazy(() => import('./pages/Revisions.jsx'));
 const Chapitre = lazy(() => import('./pages/Chapitre.jsx'));
+const ChapitreForm = lazy(() => import('./pages/ChapitreForm.jsx'));
 const Exercices = lazy(() => import('./pages/Exercices.jsx'));
 const Exercice = lazy(() => import('./pages/Exercice.jsx'));
 const NouvelExercice = lazy(() => import('./pages/NouvelExercice.jsx'));
@@ -15,6 +16,7 @@ const Travaux = lazy(() => import('./pages/Travaux.jsx'));
 const Editeur = lazy(() => import('./pages/Editeur.jsx'));
 const Annales = lazy(() => import('./pages/Annales.jsx'));
 const Sujet = lazy(() => import('./pages/Sujet.jsx'));
+const SujetForm = lazy(() => import('./pages/SujetForm.jsx'));
 const Simulation = lazy(() => import('./pages/Simulation.jsx'));
 const Bilan = lazy(() => import('./pages/Bilan.jsx'));
 const Examens = lazy(() => import('./pages/Examens.jsx'));
@@ -38,14 +40,18 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Accueil />} />
           <Route path="/revisions" element={<Revisions />} />
+          <Route path="/revisions/nouveau" element={<ChapitreForm />} />
           <Route path="/revisions/:id" element={<Chapitre />} />
+          <Route path="/revisions/:id/modifier" element={<ChapitreForm />} />
           <Route path="/exercices" element={<Exercices />} />
           <Route path="/exercices/nouveau" element={<NouvelExercice />} />
           <Route path="/exercices/:id" element={<Exercice />} />
           <Route path="/travaux" element={<Travaux />} />
           <Route path="/travaux/:id" element={<Editeur />} />
           <Route path="/annales" element={<Annales />} />
+          <Route path="/annales/nouveau" element={<SujetForm />} />
           <Route path="/annales/:id" element={<Sujet />} />
+          <Route path="/annales/:id/modifier" element={<SujetForm />} />
           <Route path="/simulation/:id" element={<Simulation />} />
           <Route path="/bilan/:id" element={<Bilan />} />
           <Route path="/examens" element={<Examens />} />

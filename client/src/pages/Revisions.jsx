@@ -1,14 +1,19 @@
 import { Link } from 'react-router-dom';
 import { useApi, Charge, Bar, ICONE_MATIERE, Vide } from '../components/ui.jsx';
 import Icon from '../components/Icon.jsx';
+import { useAuth } from '../auth.jsx';
 
 export default function Revisions() {
   const q = useApi('/chapters');
+  const { estEnseignant } = useAuth();
   return (
     <>
-      <header>
-        <h1>Révisions</h1>
-        <p className="serif-it">Le cours, chapitre par chapitre.</p>
+      <header className="row between">
+        <div>
+          <h1>Révisions</h1>
+          <p className="serif-it">Le cours, chapitre par chapitre.</p>
+        </div>
+        {estEnseignant && <Link className="btn" to="/revisions/nouveau"><Icon name="plus" size={18} /> Ajouter un chapitre</Link>}
       </header>
       <Charge q={q}>
         {(chapitres) => {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { User, Exercise, Progress, Solution, Work, Annale, Attempt } from '../models.js';
 import { ah, httpError, requireAuth } from '../util.js';
-import { chaptersWithProgress } from './content.js';
+import { chaptersWithProgress, PUBLIE } from './content.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -44,7 +44,7 @@ r.get(
         return { _id: c._id, titre: c.titre, pct: c.pct, statut };
       });
       const faits = await Progress.find({ user: u._id, chapter: reprendre._id }).distinct('exercise');
-      const exo = await Exercise.findOne({ chapter: reprendre._id, _id: { $nin: faits } }, 'titre duree').sort({ numero: 1 }).lean();
+      const exo = await Exercise.findOne({ chapter: reprendre._id, _id: { $nin: faits }, ...PUBLIE }, 'titre duree').sort({ numero: 1 }).lean();
       if (exo) aFaire.push({ type: 'exercice', _id: exo._id, titre: `Exercice : ${exo.titre}`, sousTitre: reprendre.titre, duree: exo.duree });
     }
     const tentes = await Attempt.find({ user: u._id }).distinct('annale');
