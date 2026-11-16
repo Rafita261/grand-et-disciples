@@ -133,7 +133,11 @@ export async function analyserSolution({ enonce, contenu, format, corrige }) {
 export function transcrire({ mimeType, data, format }) {
   const cible =
     format === 'latex'
-      ? 'en LaTeX : texte courant tel quel, formules entre $...$ ou \\[...\\]. Pas de préambule ni de \\documentclass.'
+      ? 'en LaTeX : texte courant tel quel, formules courtes entre $...$, formules longues entre \\[...\\]. ' +
+        'Pas de préambule ni de \\documentclass. Mise en forme limitée à \\section, \\textbf, enumerate, itemize ; ' +
+        'pas de \\vspace, \\begin{center} ni tabular (un tableau s\'écrit avec array dans \\[...\\]). ' +
+        'Un arbre de preuve s\'écrit en \\dfrac imbriqués dans un seul \\[...\\], le nom de la règle à droite de chaque barre. ' +
+        'Ignore ce qui est raturé ; ne complète pas et ne développe pas ce qui n\'est pas écrit.'
       : 'en texte simple, formules écrites avec des symboles Unicode (², √, ∫, ≤, uₙ…), sans LaTeX.';
   return generate({
     json: false,

@@ -83,8 +83,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .grid-3 { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); }
 @media (min-width: 960px) {
-  .cols-2 { display: grid; gap: 20px; grid-template-columns: 1.7fr 1fr; align-items: start; }
-  .cols-eq { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; align-items: start; }
+  .cols-2 { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: start; }
+  .cols-eq { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 }
 .cols-2, .cols-eq { display: grid; gap: 16px; }
 
@@ -139,7 +139,13 @@ textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
 .filtres { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 /* ---------- Texte riche (énoncés, cours, aperçu) ---------- */
-.rt { overflow-wrap: anywhere; }
+.rt { overflow-wrap: anywhere; min-width: 0; max-width: 100%; }
+.rt-p, .rt-center { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.rt-center { text-align: center; margin: 0.7em 0; }
+.rt-inline { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+/* Un contenu large (formule, tableau) ne doit jamais élargir la page : il défile dans son bloc. */
+.contenu, .stack { grid-template-columns: minmax(0, 1fr); }
+.card, .note, .zone, .stack > * { min-width: 0; }
 .rt .rt-p + .rt-p { margin-top: 0.7em; }
 .rt h3, .rt h4 { margin: 1em 0 0.4em; }
 .rt h3:first-child { margin-top: 0; }
